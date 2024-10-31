@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+use std::fs;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::PathBuf;
 use sha2::{Digest, Sha256};
+use yaml_rust::{Yaml, YamlEmitter, YamlLoader};
 
 pub struct BuildCache {
     assets: HashMap<String, String>,
@@ -16,12 +18,54 @@ impl BuildCache {
     }
 
     pub fn load_from_file(file: &PathBuf) -> Self {
+        let yaml_str = fs::read_to_string(&file).expect("Failed to read YAML file");
+        let docs = YamlLoader::load_from_str(&yaml_str).expect("Failed to parse YAML file");
+        let doc = &docs[0];
+        let mut assets: HashMap<String, String> = HashMap::new();
+
+        if let Some(cache) = doc["build_cache"].as_vec() {
+            for item in cache {
+                if let Some(source) = item["source"].as_str() {
+                    if let Some(checksum) = item["checksum"].as_str() {
+                        assets.insert(source.to_string(), checksum.to_string());
+                    }
+                }
+            }
+        }
+
         Self {
-            assets: HashMap::new(),
+            assets,
         }
     }
 
-    pub fn save_to_file(&self) {}
+    pub fn save_to_file(&self) -> std::io::Result<()> {
+        // Create the YAML data structure
+        let mut local_cache = Vec::new();
+
+        for asset in &self.assets {
+            let mut hash = yaml_rust::yaml::Hash::new();
+            hash.insert(Yaml::String("source".into()), Yaml::String(asset.0.clone()));
+            hash.insert(Yaml::String("checksum".into()), Yaml::String(asset.1.clone()));
+            local_cache.push(Yaml::Hash(hash));
+        }
+
+        // Wrap it in the main structure
+        let mut doc = yaml_rust::yaml::Hash::new();
+        doc.insert(Yaml::String("build_cache".into()), Yaml::Array(local_cache));
+
+        // Prepare for output
+        let mut yaml_str = String::new();
+        {
+            let mut emitter = YamlEmitter::new(&mut yaml_str);
+            emitter.dump(&Yaml::Hash(doc)).unwrap();
+        }
+
+        // Write to a file (or you can print it directly)
+        let mut file = File::create("build_cache")?;
+        file.write_all(yaml_str.as_bytes())?;
+
+        Ok(())
+    }
 
     pub fn get_checksum(&self, key: &str) -> Option<String> {
         self.assets.get(key).cloned()

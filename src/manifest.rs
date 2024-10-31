@@ -62,7 +62,7 @@ impl Manifest {
                         if exists {
                             let cache_file = Path::new(&root_str).join("build_cache");
                             cache = BuildCache::load_from_file(&cache_file);
-                            cache.save_to_file();
+                            cache.save_to_file().expect("Failed to save build cache to file");
                         }
                     }
                     Err(e) => {
@@ -189,7 +189,11 @@ impl Manifest {
                             false
                         }
                     }
-                    None => true,
+                    None => {
+                        let current_hash = BuildCache::calculate_checksum(&source_file);
+                        self.cache.update_or_insert(&asset.source, &current_hash);
+                        true
+                    },
                 };
 
                 if rebuild {
@@ -208,7 +212,7 @@ impl Manifest {
         }
 
         // Update cache file
-        self.cache.save_to_file();
+        self.cache.save_to_file().expect("Failed to save cache to disk");
     }
 
     pub fn rebuild(&mut self) {
