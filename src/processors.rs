@@ -33,6 +33,7 @@ pub fn process_audio(src: &PathBuf) -> Option<Vec<u8>> {
     let mut byte_array: Vec<u8> = Vec::with_capacity(samples.len() * size_of::<f32>());
     for &sample in &samples {
         let mut bytes = [0u8; 4];
+        // All audio sample data is stored in little endian byte order in pak files
         LittleEndian::write_f32(&mut bytes, sample);
         byte_array.extend_from_slice(&bytes);
     }
