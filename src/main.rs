@@ -37,7 +37,7 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
-    let manifest = Manifest::new(cli.manifest.as_str());
+    let mut manifest = Manifest::new(cli.manifest.as_str());
 
     if cli.build {
         println!("Building...");

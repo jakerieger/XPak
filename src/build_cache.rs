@@ -24,7 +24,7 @@ impl BuildCache {
     pub fn save_to_file(&self) {}
 
     pub fn get_checksum(&self, key: &str) -> Option<String> {
-        self.assets.get(&key).cloned()
+        self.assets.get(key).cloned()
     }
 
     pub fn calculate_checksum(source: &PathBuf) -> String {

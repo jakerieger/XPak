@@ -172,31 +172,38 @@ impl Manifest {
         let content_directory = self.create_content_directory();
         let asset_count = self.assets.len();
         let mut asset_id = 1;
-        for asset in &self.assets {
-            println!("  | [{}/{}] Building asset: {}", &asset_id, &asset_count, &asset.name);
-            let source_file = Path::new(&self.root_dir).join(&asset.source);
-            let mut rebuild = true;
 
-            // Check if asset needs to be built or is in cache
-            let cached = self.cache.get_checksum(&asset.source);
-            match cached {
-                Some(checksum) => {
-                    // Asset file has been cached, check if file has been changed.
-                    let current_hash = BuildCache::calculate_checksum(&source_file);
-                    if current_hash != checksum {
-                        self.cache.update_or_insert(&asset.source, &current_hash);
-                        rebuild = false;
+        // Collect all assets that need rebuilt
+        let assets_to_build: Vec<(&Asset, PathBuf)> = self.assets.iter()
+            .filter_map(|asset| {
+                let source_file = Path::new(&self.root_dir).join(&asset.source);
+
+                // Check if asset needs to be rebuilt
+                let rebuild = match self.cache.get_checksum(&asset.source) {
+                    Some(checksum) => {
+                        let current_hash = BuildCache::calculate_checksum(&source_file);
+                        if current_hash != checksum {
+                            self.cache.update_or_insert(&asset.source, &current_hash);
+                            true
+                        } else {
+                            false
+                        }
                     }
+                    None => true,
+                };
+
+                if rebuild {
+                    Some((asset.clone(), source_file)) // Clone the asset if it needs to be built
+                } else {
+                    println!("Skipping asset: {}", asset.name);
+                    None
                 }
-                None => ()
-            }
+            })
+            .collect();
 
-            if (rebuild) {
-                self.build_asset(&content_directory, &asset, &source_file);
-            } else {
-                println!("Skipping asset: {}", asset.name);
-            }
-
+        for (asset, source_file) in assets_to_build {
+            println!("  | [{}/{}] Building asset: {}", asset_id, asset_count, asset.name);
+            self.build_asset(&content_directory, &asset, &source_file);
             asset_id += 1;
         }
 
