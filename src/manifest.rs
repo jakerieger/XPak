@@ -57,12 +57,13 @@ impl Manifest {
                 let mut cache: BuildCache = BuildCache::new();
 
                 // Check if a local cache file exists
-                match fs::exists("build_cache") {
+                let build_cache = &_root_dir.join(".build_cache");
+                match fs::exists(&build_cache) {
                     Ok(exists) => {
                         if exists {
-                            let cache_file = Path::new(&root_str).join("build_cache");
-                            cache = BuildCache::load_from_file(&cache_file);
-                            cache.save_to_file().expect("Failed to save build cache to file");
+                            cache = BuildCache::load_from_file(&build_cache.canonicalize().unwrap());
+                            let cache_path = Path::new(&_root_dir);
+                            cache.save_to_file(&cache_path.to_path_buf()).expect("Failed to save build cache to file");
                         }
                     }
                     Err(e) => {
@@ -193,7 +194,7 @@ impl Manifest {
                         let current_hash = BuildCache::calculate_checksum(&source_file);
                         self.cache.update_or_insert(&asset.source, &current_hash);
                         true
-                    },
+                    }
                 };
 
                 if rebuild {
@@ -212,7 +213,7 @@ impl Manifest {
         }
 
         // Update cache file
-        self.cache.save_to_file().expect("Failed to save cache to disk");
+        self.cache.save_to_file(&Path::new(&self.root_dir).to_path_buf()).expect("Failed to save cache to disk");
     }
 
     pub fn rebuild(&mut self) {
@@ -222,5 +223,9 @@ impl Manifest {
 
     pub fn clean(&self) {
         let _ = self.create_content_directory();
+        let build_cache = Path::new(&self.root_dir).join(".build_cache").canonicalize().unwrap();
+        if build_cache.exists() {
+            fs::remove_file(&build_cache).expect("Failed to remove build cache file");
+        }
     }
 }

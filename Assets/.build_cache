@@ -1,0 +1,10 @@
+---
+build_cache:
+  - source: sprites/punched.png
+    checksum: 48f3c569e191277d6a53683c7eb6ec150864c89986222726d9cdc04a5cf564e8
+  - source: sprites/idle.png
+    checksum: 46c30f41c2312b6cddfa90cac04887c4fcbd5bf311e3ea3d79b36f0ff7cbe79d
+  - source: sprites/blink.png
+    checksum: 349e3d022d17841b73df862beb98a05ee84ba5a503fc22e64e4eb1863d279074
+  - source: audio/piano.wav
+    checksum: 81c96bd6d5ad123e58d97e8a1a1c9e68b628bb98b369518a50c226ce5c6e2e9a

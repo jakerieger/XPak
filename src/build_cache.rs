@@ -38,7 +38,7 @@ impl BuildCache {
         }
     }
 
-    pub fn save_to_file(&self) -> std::io::Result<()> {
+    pub fn save_to_file(&self, root_dir: &PathBuf) -> std::io::Result<()> {
         // Create the YAML data structure
         let mut local_cache = Vec::new();
 
@@ -61,7 +61,7 @@ impl BuildCache {
         }
 
         // Write to a file (or you can print it directly)
-        let mut file = File::create("build_cache")?;
+        let mut file = File::create(&root_dir.join(".build_cache"))?;
         file.write_all(yaml_str.as_bytes())?;
 
         Ok(())
