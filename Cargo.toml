@@ -1,7 +1,14 @@
 [package]
 name = "xpak"
-version = "0.1.0"
+version = "0.0.1-dev"
 edition = "2021"
+
+[profile.release]
+opt-level = "z"              # Optimize for size (alternative: "s" for moderate size reduction)
+lto = "fat"                  # Enable Link-Time Optimization
+codegen-units = 1            # Use a single codegen unit to improve optimization
+strip = false                 # Strip symbols for release (requires nightly)
+panic = "abort"              # Use `abort` for panics instead of `unwind` to reduce binary size
 
 [dependencies]
 clap = { version = "4.5.18", features = ["derive"] }
