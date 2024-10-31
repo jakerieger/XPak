@@ -45,7 +45,7 @@ impl Manifest {
                 for asset_node in doc.descendants().filter(|n| n.has_tag_name("Asset")) {
                     if let Some(name) = asset_node.attribute("name") {
                         let asset_type = asset_node.children().find(|n| n.has_tag_name("Type")).unwrap().text().unwrap_or("");
-                        let asset_source = asset_node.children().find(|n| n.has_tag_name("Build")).unwrap().text().unwrap_or("");
+                        let asset_source = asset_node.children().find(|n| n.has_tag_name("Source")).unwrap().text().unwrap_or("");
                         let asset = Asset::new(name, asset_type, asset_source);
                         asset_list.push(asset);
                     }

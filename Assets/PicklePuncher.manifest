@@ -5,19 +5,19 @@
     <Content>
         <Asset name="sprites/idle">
             <Type>Texture</Type>
-            <Build>sprites/idle.png</Build>
+            <Source>sprites/idle.png</Source>
         </Asset>
         <Asset name="sprites/blink">
             <Type>Texture</Type>
-            <Build>sprites/blink.png</Build>
+            <Source>sprites/blink.png</Source>
         </Asset>
         <Asset name="sprites/punched">
             <Type>Texture</Type>
-            <Build>sprites/punched.png</Build>
+            <Source>sprites/punched.png</Source>
         </Asset>
         <Asset name="audio/piano">
             <Type>Audio</Type>
-            <Build>audio/piano.wav</Build>
+            <Source>audio/piano.wav</Source>
         </Asset>
     </Content>
 </PakManifest>
