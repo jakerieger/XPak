@@ -107,7 +107,9 @@ impl Manifest {
         value
     }
 
-    fn clean_content_directory(&self, dir: &PathBuf) -> std::io::Result<()> {
+    pub fn save_to_file(&self) {}
+
+    fn clean_content_directory(dir: &PathBuf) -> std::io::Result<()> {
         if dir.exists() {
             fs::remove_dir_all(dir)?;
         }
@@ -116,7 +118,7 @@ impl Manifest {
 
     fn create_content_directory(&self) -> PathBuf {
         let content_dir = Path::new(&self.root_dir).join(&self.output_dir);
-        match self.clean_content_directory(&content_dir) {
+        match Manifest::clean_content_directory(&content_dir) {
             Ok(()) => {
                 // Create the content directory
                 fs::create_dir_all(&content_dir).expect("Failed to create output directory");
@@ -129,9 +131,7 @@ impl Manifest {
         content_dir
     }
 
-    pub fn save(&self) {}
-
-    fn build_asset(&mut self, content_dir: &PathBuf, asset: &Asset, source_file: &PathBuf) {
+    fn build_asset(content_dir: &PathBuf, asset: &Asset, source_file: &PathBuf) {
         let mut output_file = content_dir.join(&asset.name);
         if !output_file.set_extension("xpak") {
             println!("Failed to set extension");
@@ -193,7 +193,7 @@ impl Manifest {
                 };
 
                 if rebuild {
-                    Some((asset.clone(), source_file)) // Clone the asset if it needs to be built
+                    Some((asset, source_file)) // Clone the asset if it needs to be built
                 } else {
                     println!("Skipping asset: {}", asset.name);
                     None
@@ -203,7 +203,7 @@ impl Manifest {
 
         for (asset, source_file) in assets_to_build {
             println!("  | [{}/{}] Building asset: {}", asset_id, asset_count, asset.name);
-            self.build_asset(&content_directory, &asset, &source_file);
+            Manifest::build_asset(&content_directory, &asset, &source_file);
             asset_id += 1;
         }
 
