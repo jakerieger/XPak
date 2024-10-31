@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use super::Asset;
 use roxmltree::*;
-use crate::asset::AssetType;
+use super::asset::*;
+use super::processors;
 
 pub struct Manifest {
     pub name: String,
@@ -134,12 +134,19 @@ impl Manifest {
 
             let mut asset_data: Vec<u8> = Vec::new();
             match &asset.asset_type {
-                // AssetType::Texture => {}
-                // AssetType::Audio => {}
-                // AssetType::Data => {}
-                _ => {
-                    // For now, just the read the file directly to the byte array
-                    let data = fs::read(source_file).expect("Failed to read asset");
+                AssetType::Texture => {
+                    let data = processors::process_texture(&source_file).expect("Failed to process texture");
+                    asset_data.clear();
+                    asset_data.extend_from_slice(&data);
+                }
+                AssetType::Audio => {
+                    let data = processors::process_audio(&source_file).expect("Failed to process audio");
+                    asset_data.clear();
+                    asset_data.extend_from_slice(&data);
+                }
+                AssetType::Data => {
+                    let data = processors::process_data(&source_file).expect("Failed to process data");
+                    asset_data.clear();
                     asset_data.extend_from_slice(&data);
                 }
             }

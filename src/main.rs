@@ -4,6 +4,7 @@ use crate::manifest::Manifest;
 
 mod asset;
 mod manifest;
+mod processors;
 
 #[derive(Parser, Debug)]
 #[command(
