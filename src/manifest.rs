@@ -160,5 +160,7 @@ impl Manifest {
 
     pub fn rebuild(&self) {}
 
-    pub fn clean(&self) {}
+    pub fn clean(&self) {
+        let _ = self.create_content_directory();
+    }
 }
