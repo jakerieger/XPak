@@ -5,7 +5,8 @@
 The cache itself will just be a YAML file containing a list of asset names and SHA-256 checksum values. When building,
 XPak will check if
 the checksum of an asset source listed in the manifest matches an existing checksum in the cache file. If so, the build
-process skips the asset. If it doesn't match, the checksum is updated and the asset rebuilt.
+process skips the asset. If it doesn't match or the source file is not listed, the checksum is updated and the asset
+rebuilt.
 
 ### Cache File Example
 
