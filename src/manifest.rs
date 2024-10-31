@@ -1,7 +1,8 @@
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use super::Asset;
 use roxmltree::*;
+use crate::asset::AssetType;
 
 pub struct Manifest {
     pub name: String,
@@ -87,9 +88,68 @@ impl Manifest {
         value
     }
 
+    fn clean_content_directory(&self, dir: &PathBuf) -> std::io::Result<()> {
+        if dir.exists() {
+            fs::remove_dir_all(dir)?;
+        }
+        Ok(())
+    }
+
+    fn create_content_directory(&self) -> PathBuf {
+        let content_dir = Path::new(&self.root_dir).join(&self.output_dir);
+        match self.clean_content_directory(&content_dir) {
+            Ok(()) => {
+                // Create the content directory
+                fs::create_dir_all(&content_dir).expect("Failed to create output directory");
+            }
+            Err(e) => {
+                panic!("Unable to clean output directory.\nError: {}", e);
+            }
+        }
+
+        content_dir
+    }
+
     pub fn save(&self) {}
 
-    pub fn build(&self) {}
+    pub fn build(&self) {
+        let content_directory = self.create_content_directory();
+        let asset_count = self.assets.len();
+        let mut asset_id = 1;
+        for asset in &self.assets {
+            println!("  | [{}/{}] Building asset: {}", &asset_id, &asset_count, &asset.name);
+            let source_file = Path::new(&self.root_dir).join(&asset.source);
+            let mut output_file = content_directory.join(&asset.name);
+            if !output_file.set_extension("xpak") {
+                println!("Failed to set extension");
+                // TODO: Try another method of appending the xpak extension
+                continue;
+            }
+
+            if output_file.exists() {
+                fs::remove_file(&output_file).expect("Failed to remove output file");
+            }
+
+            fs::create_dir_all(&output_file.parent().unwrap()).expect("Failed to create output file subdirectories");
+
+            let mut asset_data: Vec<u8> = Vec::new();
+            match &asset.asset_type {
+                // AssetType::Texture => {}
+                // AssetType::Audio => {}
+                // AssetType::Data => {}
+                _ => {
+                    // For now, just the read the file directly to the byte array
+                    let data = fs::read(source_file).expect("Failed to read asset");
+                    asset_data.extend_from_slice(&data);
+                }
+            }
+
+            // Write output file to disk
+            fs::write(&output_file, &asset_data).expect("Failed to write asset");
+
+            asset_id += 1;
+        }
+    }
 
     pub fn rebuild(&self) {}
 
