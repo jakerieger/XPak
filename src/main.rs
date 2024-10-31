@@ -34,19 +34,17 @@ struct Cli {
 }
 
 fn main() {
-    let manifest = Manifest::new("PicklePuncher.manifest");
-    println!("{}", manifest.to_string());
+    let cli = Cli::parse();
+    let manifest = Manifest::new(cli.manifest.as_str());
 
-    // let cli = Cli::parse();
-
-    // if cli.build {
-    //     println!("Building...");
-    //     // Handle build logic
-    // } else if cli.rebuild {
-    //     println!("Rebuilding...");
-    //     // Handle rebuild logic
-    // } else if cli.clean {
-    //     println!("Cleaning...");
-    //     // Handle clean logic
-    // }
+    if cli.build {
+        println!("Building...");
+        manifest.build();
+    } else if cli.rebuild {
+        println!("Rebuilding...");
+        manifest.rebuild();
+    } else if cli.clean {
+        println!("Cleaning...");
+        manifest.clean();
+    }
 }
