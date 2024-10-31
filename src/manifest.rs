@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use roxmltree::*;
+use crate::build_cache::BuildCache;
 use super::asset::*;
 use super::processors;
 
@@ -11,6 +12,7 @@ pub struct Manifest {
     pub compress: bool,
     pub assets: Vec<Asset>,
     manifest_path: String,
+    cache: BuildCache,
 }
 
 impl Manifest {
@@ -52,6 +54,22 @@ impl Manifest {
                     }
                 }
 
+                let mut cache: BuildCache = BuildCache::new();
+
+                // Check if a local cache file exists
+                match fs::exists("build_cache") {
+                    Ok(exists) => {
+                        if exists {
+                            let cache_file = Path::new(&root_str).join("build_cache");
+                            cache = BuildCache::load_from_file(&cache_file);
+                            cache.save_to_file();
+                        }
+                    }
+                    Err(e) => {
+                        panic!("Error locating build cache: {}", e);
+                    }
+                }
+
                 Self {
                     name: name_str,
                     root_dir: root_str,
@@ -59,6 +77,7 @@ impl Manifest {
                     compress: compress.to_owned(),
                     assets: asset_list,
                     manifest_path: manifest_path_str,
+                    cache,
                 }
             }
             Err(e) => {
@@ -112,50 +131,73 @@ impl Manifest {
 
     pub fn save(&self) {}
 
-    pub fn build(&self) {
+    pub fn build(&mut self) {
         let content_directory = self.create_content_directory();
         let asset_count = self.assets.len();
         let mut asset_id = 1;
         for asset in &self.assets {
             println!("  | [{}/{}] Building asset: {}", &asset_id, &asset_count, &asset.name);
             let source_file = Path::new(&self.root_dir).join(&asset.source);
-            let mut output_file = content_directory.join(&asset.name);
-            if !output_file.set_extension("xpak") {
-                println!("Failed to set extension");
-                // TODO: Try another method of appending the xpak extension
-                continue;
+            let mut rebuild = true;
+
+            // Check if asset needs to be built or is in cache
+            let cached = self.cache.get_checksum(&asset.source);
+            match cached {
+                Some(checksum) => {
+                    // Asset file has been cached, check if file has been changed.
+                    let current_hash = BuildCache::calculate_checksum(&source_file);
+                    if current_hash != checksum {
+                        self.cache.update_or_insert(&asset.source, &current_hash);
+                        rebuild = false;
+                    }
+                }
+                None => ()
             }
 
-            if output_file.exists() {
-                fs::remove_file(&output_file).expect("Failed to remove output file");
+            if (rebuild) {
+                let mut output_file = content_directory.join(&asset.name);
+                if !output_file.set_extension("xpak") {
+                    println!("Failed to set extension");
+                    // TODO: Try another method of appending the xpak extension
+                    continue;
+                }
+
+                if output_file.exists() {
+                    fs::remove_file(&output_file).expect("Failed to remove output file");
+                }
+
+                fs::create_dir_all(&output_file.parent().unwrap()).expect("Failed to create output file subdirectories");
+
+                let mut asset_data: Vec<u8> = Vec::new();
+                match &asset.asset_type {
+                    AssetType::Texture => {
+                        let data = processors::process_texture(&source_file).expect("Failed to process texture");
+                        asset_data.clear();
+                        asset_data.extend_from_slice(&data);
+                    }
+                    AssetType::Audio => {
+                        let data = processors::process_audio(&source_file).expect("Failed to process audio");
+                        asset_data.clear();
+                        asset_data.extend_from_slice(&data);
+                    }
+                    AssetType::Data => {
+                        let data = processors::process_data(&source_file).expect("Failed to process data");
+                        asset_data.clear();
+                        asset_data.extend_from_slice(&data);
+                    }
+                }
+
+                // Write output file to disk
+                fs::write(&output_file, &asset_data).expect("Failed to write asset");
+            } else {
+                println!("Skipping asset: {}", asset.name);
             }
-
-            fs::create_dir_all(&output_file.parent().unwrap()).expect("Failed to create output file subdirectories");
-
-            let mut asset_data: Vec<u8> = Vec::new();
-            match &asset.asset_type {
-                AssetType::Texture => {
-                    let data = processors::process_texture(&source_file).expect("Failed to process texture");
-                    asset_data.clear();
-                    asset_data.extend_from_slice(&data);
-                }
-                AssetType::Audio => {
-                    let data = processors::process_audio(&source_file).expect("Failed to process audio");
-                    asset_data.clear();
-                    asset_data.extend_from_slice(&data);
-                }
-                AssetType::Data => {
-                    let data = processors::process_data(&source_file).expect("Failed to process data");
-                    asset_data.clear();
-                    asset_data.extend_from_slice(&data);
-                }
-            }
-
-            // Write output file to disk
-            fs::write(&output_file, &asset_data).expect("Failed to write asset");
 
             asset_id += 1;
         }
+
+        // Update cache file
+        self.cache.save_to_file();
     }
 
     pub fn rebuild(&self) {}
