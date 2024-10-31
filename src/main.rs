@@ -1,5 +1,6 @@
 use crate::asset::*;
 use clap::{ArgGroup, Parser};
+use crate::manifest::Manifest;
 
 mod asset;
 mod manifest;
@@ -33,11 +34,8 @@ struct Cli {
 }
 
 fn main() {
-    let asset = Asset::new("sprite/idle", "Texture", "sprite/idle.png");
-    println!(
-        "Name: {}, Type: {}, Source: {}",
-        asset.name, asset.asset_type.to_string(), asset.source
-    );
+    let manifest = Manifest::new("PicklePuncher.manifest");
+    println!("{}", manifest.to_string());
 
     // let cli = Cli::parse();
 
