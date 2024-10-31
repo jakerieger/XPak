@@ -131,6 +131,43 @@ impl Manifest {
 
     pub fn save(&self) {}
 
+    fn build_asset(&mut self, content_dir: &PathBuf, asset: &Asset, source_file: &PathBuf) {
+        let mut output_file = content_dir.join(&asset.name);
+        if !output_file.set_extension("xpak") {
+            println!("Failed to set extension");
+            // TODO: Try another method of appending the xpak extension
+            return;
+        }
+
+        if output_file.exists() {
+            fs::remove_file(&output_file).expect("Failed to remove output file");
+        }
+
+        fs::create_dir_all(&output_file.parent().unwrap()).expect("Failed to create output file subdirectories");
+
+        let mut asset_data: Vec<u8> = Vec::new();
+        match &asset.asset_type {
+            AssetType::Texture => {
+                let data = processors::process_texture(&source_file).expect("Failed to process texture");
+                asset_data.clear();
+                asset_data.extend_from_slice(&data);
+            }
+            AssetType::Audio => {
+                let data = processors::process_audio(&source_file).expect("Failed to process audio");
+                asset_data.clear();
+                asset_data.extend_from_slice(&data);
+            }
+            AssetType::Data => {
+                let data = processors::process_data(&source_file).expect("Failed to process data");
+                asset_data.clear();
+                asset_data.extend_from_slice(&data);
+            }
+        }
+
+        // Write output file to disk
+        fs::write(&output_file, &asset_data).expect("Failed to write asset");
+    }
+
     pub fn build(&mut self) {
         let content_directory = self.create_content_directory();
         let asset_count = self.assets.len();
@@ -155,40 +192,7 @@ impl Manifest {
             }
 
             if (rebuild) {
-                let mut output_file = content_directory.join(&asset.name);
-                if !output_file.set_extension("xpak") {
-                    println!("Failed to set extension");
-                    // TODO: Try another method of appending the xpak extension
-                    continue;
-                }
-
-                if output_file.exists() {
-                    fs::remove_file(&output_file).expect("Failed to remove output file");
-                }
-
-                fs::create_dir_all(&output_file.parent().unwrap()).expect("Failed to create output file subdirectories");
-
-                let mut asset_data: Vec<u8> = Vec::new();
-                match &asset.asset_type {
-                    AssetType::Texture => {
-                        let data = processors::process_texture(&source_file).expect("Failed to process texture");
-                        asset_data.clear();
-                        asset_data.extend_from_slice(&data);
-                    }
-                    AssetType::Audio => {
-                        let data = processors::process_audio(&source_file).expect("Failed to process audio");
-                        asset_data.clear();
-                        asset_data.extend_from_slice(&data);
-                    }
-                    AssetType::Data => {
-                        let data = processors::process_data(&source_file).expect("Failed to process data");
-                        asset_data.clear();
-                        asset_data.extend_from_slice(&data);
-                    }
-                }
-
-                // Write output file to disk
-                fs::write(&output_file, &asset_data).expect("Failed to write asset");
+                self.build_asset(&content_directory, &asset, &source_file);
             } else {
                 println!("Skipping asset: {}", asset.name);
             }
@@ -200,7 +204,10 @@ impl Manifest {
         self.cache.save_to_file();
     }
 
-    pub fn rebuild(&self) {}
+    pub fn rebuild(&mut self) {
+        self.clean();
+        self.build();
+    }
 
     pub fn clean(&self) {
         let _ = self.create_content_directory();
