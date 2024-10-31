@@ -12,7 +12,7 @@ mod manifest;
     about = "Asset packing tool for Xen Engine"
 )]
 #[command(group(
-    ArgGroup::new("build_options")
+    ArgGroup::new("actions")
         .required(true)
         .args(["build", "rebuild", "clean"]),
 ))]

@@ -31,23 +31,23 @@ impl Manifest {
             Ok(doc) => {
                 let root = doc.root_element();
                 assert_eq!(root.tag_name().name(), "PakManifest");
-                let output_dir_el = root.descendants().find(|n| n.tag_name().name() == "OutputDir").unwrap();
-                assert!(output_dir_el.is_element());
-                let output_dir = output_dir_el.text().unwrap().to_string();
-                let compress_el = root.descendants().find(|n| n.tag_name().name() == "Compress").unwrap();
-                assert!(compress_el.is_element());
-                let compress_str = compress_el.text().unwrap().to_string();
+                let output_dir_node = root.descendants().find(|n| n.tag_name().name() == "OutputDir").unwrap();
+                assert!(output_dir_node.is_element());
+                let output_dir = output_dir_node.text().unwrap().to_string();
+                let compress_node = root.descendants().find(|n| n.tag_name().name() == "Compress").unwrap();
+                assert!(compress_node.is_element());
+                let compress_str = compress_node.text().unwrap().to_string();
                 let compress = compress_str == "true";
 
                 // Process assets
                 let asset_count = doc.descendants().filter(|n| n.has_tag_name("Asset")).count();
                 let mut asset_list: Vec<Asset> = Vec::with_capacity(asset_count);
-                for asset in doc.descendants().filter(|n| n.has_tag_name("Asset")) {
-                    if let Some(name) = asset.attribute("name") {
-                        let asset_type = asset.children().find(|n| n.has_tag_name("Type")).unwrap().text().unwrap_or("");
-                        let asset_source = asset.children().find(|n| n.has_tag_name("Build")).unwrap().text().unwrap_or("");
-                        let _asset = Asset::new(name, asset_type, asset_source);
-                        asset_list.push(_asset);
+                for asset_node in doc.descendants().filter(|n| n.has_tag_name("Asset")) {
+                    if let Some(name) = asset_node.attribute("name") {
+                        let asset_type = asset_node.children().find(|n| n.has_tag_name("Type")).unwrap().text().unwrap_or("");
+                        let asset_source = asset_node.children().find(|n| n.has_tag_name("Build")).unwrap().text().unwrap_or("");
+                        let asset = Asset::new(name, asset_type, asset_source);
+                        asset_list.push(asset);
                     }
                 }
 
